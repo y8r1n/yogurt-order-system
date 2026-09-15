@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "633014409697",
+    "project_id": "yogurtorder-94d37",
+    "storage_bucket": "yogurtorder-94d37.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:633014409697:android:d9e014d9e7b436c0cd9aa0",
+        "android_client_info": {
+          "package_name": "com.yogurtworld.staff"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD20qyCDjWbjWRDSfnxr0L7KWMTJZVKGIM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

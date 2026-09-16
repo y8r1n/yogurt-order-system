@@ -21,6 +21,8 @@ coverage/
 **/android/key.properties
 **/*.jks
 **/*.keystore
+android/key.properties
+key.properties
 
 # iOS / macOS
 **/ios/Pods/

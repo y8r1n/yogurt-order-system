@@ -310,6 +310,31 @@ Future<void> acceptOrder(String orderId) async {
   }
 }
 
+// ============================================================
+// 지난 주문 삭제
+// ============================================================
+
+Future<void> deleteOrder(String orderId) async {
+  final supabase = Supabase.instance.client;
+
+  debugPrint('주문 삭제 시작: $orderId');
+
+  try {
+    await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+    debugPrint('주문 삭제 완료: $orderId');
+
+    await refreshOrders();
+  } catch (e, stackTrace) {
+    debugPrint('주문 삭제 실패: $e');
+    debugPrint('$stackTrace');
+    rethrow;
+  }
+}
+
   // ============================================================
   // 새로 조회
   // ============================================================

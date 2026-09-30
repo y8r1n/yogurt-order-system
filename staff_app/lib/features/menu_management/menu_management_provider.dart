@@ -323,6 +323,55 @@ Future<void> refresh() async {
   );
 }
 
+// ============================================================
+// 카테고리 추가
+// ============================================================
+
+Future<String> addCategory({
+  required String name,
+}) async {
+  final supabase = Supabase.instance.client;
+  final trimmedName = name.trim();
+
+  if (trimmedName.isEmpty) {
+    throw Exception('카테고리명을 입력해주세요.');
+  }
+
+  final rows = await supabase
+      .from('menu_categories')
+      .select('display_order')
+      .order(
+        'display_order',
+        ascending: false,
+      )
+      .limit(1);
+
+  int nextDisplayOrder = 0;
+
+  if (rows.isNotEmpty) {
+    final lastOrder =
+        rows.first['display_order'] as int? ?? 0;
+
+    nextDisplayOrder = lastOrder + 1;
+  }
+
+  final inserted = await supabase
+      .from('menu_categories')
+      .insert({
+        'name': trimmedName,
+        'display_order': nextDisplayOrder,
+        'is_active': true,
+      })
+      .select('id')
+      .single();
+
+  final categoryId = inserted['id'] as String;
+
+  await refresh();
+
+  return categoryId;
+}
+
 Future<List<StaffOptionGroup>>
     fetchOptionGroups() async {
   final supabase =

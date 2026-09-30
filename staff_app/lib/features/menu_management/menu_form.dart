@@ -329,6 +329,79 @@ await notifier.refresh();
   }
 }
 
+
+
+ Future<void> _addCategory() async {
+    final controller = TextEditingController();
+
+    final name = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('카테고리 추가'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: '카테고리명',
+              hintText: '예: 시즌 메뉴',
+            ),
+            onSubmitted: (_) {
+              final value = controller.text.trim();
+
+              if (value.isNotEmpty) {
+                Navigator.of(dialogContext).pop(value);
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () {
+                final value = controller.text.trim();
+
+                if (value.isEmpty) return;
+
+                Navigator.of(dialogContext).pop(value);
+              },
+              child: const Text('추가'),
+            ),
+          ],
+        );
+      },
+    );
+
+    controller.dispose();
+
+    if (name == null || !mounted) return;
+
+    try {
+      final categoryId = await ref
+          .read(menuManagementProvider.notifier)
+          .addCategory(name: name);
+
+      if (!mounted) return;
+
+      setState(() {
+        selectedCategoryId = categoryId;
+      });
+
+      _showMessage('카테고리가 추가되었습니다.');
+    } catch (e) {
+      if (!mounted) return;
+
+      _showMessage(
+        '카테고리 추가 중 오류가 발생했습니다.\n$e',
+      );
+    }
+  }
+
+
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
         .showSnackBar(
@@ -403,16 +476,15 @@ Future<void> _pickImage() async {
           const SizedBox(height: 20),
 
           _CategorySection(
-            categories: widget.categories,
-            selectedCategoryId:
-                selectedCategoryId,
-            onChanged: (categoryId) {
-              setState(() {
-                selectedCategoryId =
-                    categoryId;
-              });
-            },
-          ),
+  categories: widget.categories,
+  selectedCategoryId: selectedCategoryId,
+  onChanged: (categoryId) {
+    setState(() {
+      selectedCategoryId = categoryId;
+    });
+  },
+  onAddCategory: _addCategory,
+),
 
           const SizedBox(height: 36),
 
@@ -524,11 +596,13 @@ class _CategorySection extends StatelessWidget {
     required this.categories,
     required this.selectedCategoryId,
     required this.onChanged,
+    required this.onAddCategory,
   });
 
   final List<MenuCategoryItem> categories;
   final String? selectedCategoryId;
   final ValueChanged<String> onChanged;
+  final VoidCallback onAddCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -536,9 +610,27 @@ class _CategorySection extends StatelessWidget {
       crossAxisAlignment:
           CrossAxisAlignment.start,
       children: [
-        const _SectionLabel(
-          text: '카테고리 수정',
-        ),
+        Row(
+  children: [
+    const _SectionLabel(
+      text: '카테고리',
+    ),
+
+    const Spacer(),
+
+    TextButton.icon(
+      onPressed: onAddCategory,
+      icon: const Icon(
+        Icons.add,
+        size: 18,
+      ),
+      label: const Text('카테고리 추가'),
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.primary,
+      ),
+    ),
+  ],
+),
 
         const SizedBox(height: 16),
 

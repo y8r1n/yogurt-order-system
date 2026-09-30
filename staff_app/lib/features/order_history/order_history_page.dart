@@ -134,6 +134,63 @@ void moveNextDate() {
     });
   }
 
+  Future<void> _confirmDeleteOrder(StaffOrder order) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('주문 내역 삭제'),
+        content: Text(
+          'NUMBER : ${order.number}\n'
+          '이 주문 내역을 삭제하시겠습니까?\n\n'
+          '삭제한 주문은 복구할 수 없습니다.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              '삭제',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (confirmed != true || !mounted) return;
+
+  try {
+    await ref
+        .read(staffOrderProvider.notifier)
+        .deleteOrder(order.id);
+
+    if (!mounted) return;
+
+    await _loadHistoryOrders();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('주문 내역이 삭제되었습니다.'),
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('주문 삭제에 실패했습니다.\n$e'),
+      ),
+    );
+  }
+}
+
   @override
 Widget build(BuildContext context) {
   if (isLoadingHistory) {
@@ -314,13 +371,12 @@ Widget build(BuildContext context) {
                   itemBuilder: (context, index) {
                     final order = orders[index];
 
-                    return _HistoryOrderCard(
-                      order: order,
-                      expanded:
-                          expandedOrderNumber == order.number,
-                      onTap: () =>
-                          toggleOrder(order.number),
-                    );
+                return _HistoryOrderCard(
+  order: order,
+  expanded: expandedOrderNumber == order.number,
+  onTap: () => toggleOrder(order.number),
+  onDelete: () => _confirmDeleteOrder(order),
+);
                   },
                 ),
               ),
@@ -373,15 +429,17 @@ class _TopTab extends StatelessWidget {
 // ============================================================
 
 class _HistoryOrderCard extends StatelessWidget {
-  const _HistoryOrderCard({
-    required this.order,
-    required this.expanded,
-    required this.onTap,
-  });
+const _HistoryOrderCard({
+  required this.order,
+  required this.expanded,
+  required this.onTap,
+  required this.onDelete,
+});
 
-  final StaffOrder order;
-  final bool expanded;
-  final VoidCallback onTap;
+final StaffOrder order;
+final bool expanded;
+final VoidCallback onTap;
+final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -497,23 +555,34 @@ class _HistoryOrderCard extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${_formatDate(order.completedAt!)} '
-                          '${_formatTime(order.completedAt!)}',
-                          style: AppTextStyles.caption,
-                        ),
-                      ),
+  children: [
+    Expanded(
+      child: Text(
+        '${_formatDate(order.completedAt!)} '
+        '${_formatTime(order.completedAt!)}',
+        style: AppTextStyles.caption,
+      ),
+    ),
 
-                      Text(
-                        '${_formatPrice(order.totalPrice)}원',
-                        style: AppTextStyles.titleMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
+    IconButton(
+      onPressed: onDelete,
+      tooltip: '주문 삭제',
+      icon: const Icon(
+        Icons.delete_outline,
+        color: Colors.red,
+      ),
+    ),
+
+    const SizedBox(width: 4),
+
+    Text(
+      '${_formatPrice(order.totalPrice)}원',
+      style: AppTextStyles.titleMedium.copyWith(
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  ],
+),
                 ],
               ),
             ),

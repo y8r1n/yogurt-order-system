@@ -21,6 +21,7 @@ class _MenuPageState extends ConsumerState<MenuPage> {
   int selectedCategoryIndex = 0;
 
   RealtimeChannel? _menusChannel;
+  RealtimeChannel? _categoriesChannel;
 
 // 카테고리
 final List<_MenuCategory> categories = [];
@@ -59,10 +60,17 @@ void _subscribeToMenus() {
 
 @override
 void dispose() {
-  final channel = _menusChannel;
+  final menusChannel = _menusChannel;
+  final categoriesChannel = _categoriesChannel;
 
-  if (channel != null) {
-    Supabase.instance.client.removeChannel(channel);
+  if (menusChannel != null) {
+    Supabase.instance.client
+        .removeChannel(menusChannel);
+  }
+
+  if (categoriesChannel != null) {
+    Supabase.instance.client
+        .removeChannel(categoriesChannel);
   }
 
   super.dispose();
@@ -87,19 +95,45 @@ Future<void> _loadCategories() async {
         )
         .toList();
 
-    setState(() {
-      categories
-        ..clear()
-        ..addAll(loadedCategories);
+   String? selectedCategoryId;
 
-      isLoadingCategories = false;
-      categoryError = null;
-    });
+if (categories.isNotEmpty &&
+    selectedCategoryIndex < categories.length) {
+  selectedCategoryId =
+      categories[selectedCategoryIndex].id;
+}
 
-    if (loadedCategories.isNotEmpty) {
-      await _loadMenus(loadedCategories.first.id);
-    }
-    _subscribeToMenus();
+setState(() {
+  categories
+    ..clear()
+    ..addAll(loadedCategories);
+
+  if (categories.isEmpty) {
+    selectedCategoryIndex = 0;
+  } else if (selectedCategoryId != null) {
+    final newIndex = categories.indexWhere(
+      (category) =>
+          category.id == selectedCategoryId,
+    );
+
+    selectedCategoryIndex =
+        newIndex >= 0 ? newIndex : 0;
+  } else {
+    selectedCategoryIndex = 0;
+  }
+
+  isLoadingCategories = false;
+  categoryError = null;
+});
+
+if (categories.isNotEmpty) {
+  await _loadMenus(
+    categories[selectedCategoryIndex].id,
+  );
+}
+
+_subscribeToMenus();
+_subscribeToCategories();
   } catch (e) {
     if (!mounted) return;
 
@@ -110,6 +144,29 @@ Future<void> _loadCategories() async {
 
     debugPrint('카테고리 불러오기 실패: $e');
   }
+}
+
+
+void _subscribeToCategories() {
+  if (_categoriesChannel != null) return;
+
+  _categoriesChannel = Supabase.instance.client
+      .channel('customer-categories-realtime')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'menu_categories',
+        callback: (payload) async {
+          if (!mounted) return;
+
+          debugPrint(
+            '카테고리 변경 감지: ${payload.eventType}',
+          );
+
+          await _loadCategories();
+        },
+      )
+      .subscribe();
 }
 
 

@@ -284,36 +284,42 @@ void selectMenu(_Menu menu) {
         ? const Center(
             child: Text('카테고리를 불러오지 못했습니다.'),
           )
-        : Row(
-           
-            children: List.generate(categories.length, (index) {
-              final isSelected = selectedCategoryIndex == index;
+       : ListView.separated(
+    scrollDirection: Axis.horizontal,
+    itemCount: categories.length,
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    separatorBuilder: (context, index) =>
+        const SizedBox(width: 28),
+    itemBuilder: (context, index) {
+      final isSelected = selectedCategoryIndex == index;
 
-              return Expanded(
-                child: InkWell(
-                  onTap: () => selectCategory(index),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Center(
-                    child: Text(
-                      categories[index].name,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.titleMedium.copyWith(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.textPrimary,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
+      return InkWell(
+        onTap: () => selectCategory(index),
+        borderRadius: BorderRadius.circular(12),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              categories[index].name,
+              maxLines: 1,
+              softWrap: false,
+              style: AppTextStyles.titleMedium.copyWith(
+                color: isSelected
+                    ? AppColors.primary
+                    : AppColors.textPrimary,
+                fontWeight: isSelected
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
           ),
+        ),
+      );
+    },
+  ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
                   // =========================
                   // 메뉴 목록

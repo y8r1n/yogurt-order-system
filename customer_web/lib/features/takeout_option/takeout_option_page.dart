@@ -55,11 +55,25 @@ class _TakeoutOptionPageState
     });
   }
 
-  void goToMenu() {
-  if (icePack == null || spoon == null) {
+ void goToMenu() {
+  final session = ref.read(orderSessionProvider);
+  final isTakeOut = session.orderType == 'take_out';
+
+  // 매장/포장 공통: 숟가락은 반드시 선택
+  if (spoon == null) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('아이스팩과 숟가락 옵션을 선택해주세요.'),
+        content: Text('숟가락 옵션을 선택해주세요.'),
+      ),
+    );
+    return;
+  }
+
+  // 포장 주문일 때만 아이스팩 필수
+  if (isTakeOut && icePack == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('아이스팩 옵션을 선택해주세요.'),
       ),
     );
     return;
@@ -68,21 +82,33 @@ class _TakeoutOptionPageState
   final finalSpoonCount =
       spoon == true ? spoonCount : 0;
 
-  ref.read(orderSessionProvider.notifier).setTakeOut(
-    icePack: icePack!,
-    spoonCount: finalSpoonCount,
-  );
+  final notifier =
+      ref.read(orderSessionProvider.notifier);
 
-  debugPrint('주문 방식: take_out');
-  debugPrint('아이스팩: $icePack');
+  if (isTakeOut) {
+    notifier.setTakeOut(
+      icePack: icePack!,
+      spoonCount: finalSpoonCount,
+    );
+
+    debugPrint('주문 방식: take_out');
+    debugPrint('아이스팩: $icePack');
+  } else {
+    notifier.setDineIn(
+      spoonCount: finalSpoonCount,
+    );
+
+    debugPrint('주문 방식: dine_in');
+  }
+
   debugPrint('숟가락 개수: $finalSpoonCount');
 
   context.go('/menu');
 }
 
-  @override
-  Widget build(BuildContext context) {
-     final session = ref.watch(orderSessionProvider);
+ @override
+Widget build(BuildContext context) {
+  final session = ref.watch(orderSessionProvider);
   final isTakeOut = session.orderType == 'take_out';
 
     
@@ -117,31 +143,33 @@ class _TakeoutOptionPageState
 
                   const SizedBox(height: 48),
 
-                  // =========================
-                  // 아이스팩
-                  // =========================
-                  Text(
-                    '아이스팩 선택',
-                    style: AppTextStyles.titleMedium,
-                  ),
+                 // =========================
+// 아이스팩 - 포장 주문일 때만 표시
+// =========================
+if (isTakeOut) ...[
+  Text(
+    '아이스팩 선택',
+    style: AppTextStyles.titleMedium,
+  ),
 
-                  const SizedBox(height: 20),
+  const SizedBox(height: 20),
 
-                  _OptionCard(
-                    label: '아이스팩 X',
-                    isSelected: icePack == false,
-                    onTap: () => selectIcePack(false),
-                  ),
+  _OptionCard(
+    label: '아이스팩 X',
+    isSelected: icePack == false,
+    onTap: () => selectIcePack(false),
+  ),
 
-                  const SizedBox(height: 12),
+  const SizedBox(height: 12),
 
-                  _OptionCard(
-                    label: '아이스팩 O',
-                    isSelected: icePack == true,
-                    onTap: () => selectIcePack(true),
-                  ),
+  _OptionCard(
+    label: '아이스팩 O',
+    isSelected: icePack == true,
+    onTap: () => selectIcePack(true),
+  ),
 
-                  const SizedBox(height: 40),
+  const SizedBox(height: 40),
+],
 
                   // =========================
                   // 숟가락

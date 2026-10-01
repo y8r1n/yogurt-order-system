@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-
-import 'package:go_router/go_router.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'order_session_provider.dart';
 
 enum OrderType {
@@ -14,36 +11,34 @@ enum OrderType {
   takeOut,
 }
 
-class OrderTypePage extends ConsumerStatefulWidget  {
+class OrderTypePage extends ConsumerStatefulWidget {
   const OrderTypePage({super.key});
 
   @override
   ConsumerState<OrderTypePage> createState() =>
-    _OrderTypePageState();
+      _OrderTypePageState();
 }
 
-class _OrderTypePageState
-    extends ConsumerState<OrderTypePage> {
+class _OrderTypePageState extends ConsumerState<OrderTypePage> {
   OrderType? selectedType;
 
-void selectOrderType(OrderType type) {
-  setState(() {
-    selectedType = type;
-  });
+  void selectOrderType(OrderType type) {
+    setState(() {
+      selectedType = type;
+    });
 
-  final orderType = type == OrderType.dineIn
-      ? 'dine_in'
-      : 'take_out';
+    final orderType = type == OrderType.dineIn
+        ? 'dine_in'
+        : 'take_out';
 
-  ref
-      .read(orderSessionProvider.notifier)
-      .selectOrderType(orderType);
+    ref
+        .read(orderSessionProvider.notifier)
+        .selectOrderType(orderType);
 
-  debugPrint('선택된 주문 방식: $orderType');
+    debugPrint('선택된 주문 방식: $orderType');
 
-  context.go('/takeout-option');
-}
-}
+    context.go('/takeout-option');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +60,8 @@ void selectOrderType(OrderType type) {
                       icon: Icons.restaurant,
                       label: '매장에서 먹어요',
                       isSelected: selectedType == OrderType.dineIn,
-                      onTap: () => selectOrderType(OrderType.dineIn),
+                      onTap: () =>
+                          selectOrderType(OrderType.dineIn),
                     ),
                   ),
                   const SizedBox(width: 48),
@@ -74,7 +70,8 @@ void selectOrderType(OrderType type) {
                       icon: Icons.shopping_bag_outlined,
                       label: '포장해서 가요',
                       isSelected: selectedType == OrderType.takeOut,
-                     onTap: () => selectOrderType(OrderType.takeOut),
+                      onTap: () =>
+                          selectOrderType(OrderType.takeOut),
                     ),
                   ),
                 ],

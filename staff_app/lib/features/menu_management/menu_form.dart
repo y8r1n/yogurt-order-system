@@ -401,6 +401,29 @@ await notifier.refresh();
     }
   }
 
+Future<void> _showCategoryEditDialog() async {
+ final data = ref.read(menuManagementProvider).value;
+
+  if (data == null) {
+    _showMessage('카테고리 정보를 불러오지 못했습니다.');
+    return;
+  }
+
+  final activeCategories = data.categories
+      .where((category) => category.isActive)
+      .toList();
+
+  await showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) {
+      return _CategoryEditDialog(
+        categories: activeCategories,
+      );
+    },
+  );
+}
+
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
@@ -475,7 +498,7 @@ Future<void> _pickImage() async {
 
           const SizedBox(height: 20),
 
-          _CategorySection(
+         _CategorySection(
   categories: widget.categories,
   selectedCategoryId: selectedCategoryId,
   onChanged: (categoryId) {
@@ -484,6 +507,7 @@ Future<void> _pickImage() async {
     });
   },
   onAddCategory: _addCategory,
+  onEditCategory: _showCategoryEditDialog,
 ),
 
           const SizedBox(height: 36),
@@ -597,12 +621,14 @@ class _CategorySection extends StatelessWidget {
     required this.selectedCategoryId,
     required this.onChanged,
     required this.onAddCategory,
+    required this.onEditCategory,
   });
 
   final List<MenuCategoryItem> categories;
   final String? selectedCategoryId;
   final ValueChanged<String> onChanged;
   final VoidCallback onAddCategory;
+  final VoidCallback onEditCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -612,19 +638,24 @@ class _CategorySection extends StatelessWidget {
       children: [
         Row(
   children: [
-    const _SectionLabel(
-      text: '카테고리',
-    ),
-
+    const _SectionLabel(text: '카테고리'),
     const Spacer(),
 
     TextButton.icon(
       onPressed: onAddCategory,
-      icon: const Icon(
-        Icons.add,
-        size: 18,
-      ),
+      icon: const Icon(Icons.add, size: 18),
       label: const Text('카테고리 추가'),
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.primary,
+      ),
+    ),
+
+    const SizedBox(width: 8),
+
+    TextButton.icon(
+      onPressed: onEditCategory,
+      icon: const Icon(Icons.edit_outlined, size: 18),
+      label: const Text('카테고리 수정'),
       style: TextButton.styleFrom(
         foregroundColor: AppColors.primary,
       ),
@@ -712,6 +743,252 @@ class _CategorySection extends StatelessWidget {
               );
             },
           ).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _CategoryEditDialog extends ConsumerStatefulWidget {
+  const _CategoryEditDialog({
+    required this.categories,
+  });
+
+  final List<MenuCategoryItem> categories;
+
+  @override
+  ConsumerState<_CategoryEditDialog> createState() =>
+      _CategoryEditDialogState();
+}
+
+class _CategoryEditDialogState
+    extends ConsumerState<_CategoryEditDialog> {
+  late List<MenuCategoryItem> categories;
+
+  final Set<String> selectedCategoryIds = {};
+bool isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    categories = List<MenuCategoryItem>.from(
+      widget.categories,
+    );
+  }
+
+  void _reorder(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) {
+        newIndex -= 1;
+      }
+
+      final item = categories.removeAt(oldIndex);
+      categories.insert(newIndex, item);
+    });
+  }
+
+  Future<void> _deleteSelectedCategories() async {
+  if (selectedCategoryIds.isEmpty) {
+    return;
+  }
+
+  final selectedCategories = categories
+      .where(
+        (category) =>
+            selectedCategoryIds.contains(category.id),
+      )
+      .toList();
+
+  final categoryNames = selectedCategories
+      .map((category) => category.name)
+      .join(', ');
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (confirmContext) {
+      return AlertDialog(
+        title: const Text('카테고리 삭제'),
+        content: Text(
+          '선택한 ${selectedCategories.length}개의 카테고리를 '
+          '삭제하시겠습니까?\n\n'
+          '$categoryNames\n\n'
+          '키오스크에서는 숨겨지며, '
+          '카테고리에 포함된 메뉴 데이터는 유지됩니다.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(confirmContext).pop(false);
+            },
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(confirmContext).pop(true);
+            },
+            child: const Text('삭제'),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (confirmed != true || !mounted) {
+    return;
+  }
+
+  try {
+    for (final category in selectedCategories) {
+      await ref
+          .read(menuManagementProvider.notifier)
+          .deleteCategory(category.id);
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      categories.removeWhere(
+        (category) =>
+            selectedCategoryIds.contains(category.id),
+      );
+
+      selectedCategoryIds.clear();
+    });
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '카테고리 삭제 중 오류가 발생했습니다.\n$e',
+        ),
+      ),
+    );
+  }
+}
+
+
+
+  Future<void> _saveOrder() async {
+    setState(() {
+      isSaving = true;
+    });
+
+    try {
+      await ref
+          .read(menuManagementProvider.notifier)
+          .reorderCategories(categories);
+
+      if (!mounted) return;
+
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('카테고리 순서 저장 중 오류가 발생했습니다.\n$e'),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('카테고리 수정'),
+
+      content: SizedBox(
+        width: 520,
+        height: 520,
+        child: Column(
+          children: [
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '드래그하여 카테고리 노출 순서를 변경할 수 있습니다.',
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            Expanded(
+              child: ReorderableListView.builder(
+                itemCount: categories.length,
+                onReorder: _reorder,
+               itemBuilder: (context, index) {
+  final category = categories[index];
+
+  final isSelected =
+      selectedCategoryIds.contains(category.id);
+
+  return ListTile(
+    key: ValueKey(category.id),
+
+    onTap: () {
+      setState(() {
+        if (selectedCategoryIds.contains(category.id)) {
+          selectedCategoryIds.remove(category.id);
+        } else {
+          selectedCategoryIds.add(category.id);
+        }
+      });
+    },
+
+    selected: isSelected,
+
+    leading: const Icon(
+      Icons.drag_handle,
+    ),
+
+    title: Text(category.name),
+
+    trailing: isSelected
+        ? const Icon(Icons.check)
+        : null,
+  );
+},
+              ),
+            ),
+
+            if (selectedCategoryIds.isNotEmpty) ...[
+  const Divider(),
+
+  Align(
+    alignment: Alignment.centerLeft,
+    child: TextButton.icon(
+      onPressed: _deleteSelectedCategories,
+      icon: const Icon(
+        Icons.delete_outline,
+      ),
+      label: Text(
+        '선택한 카테고리 삭제 (${selectedCategoryIds.length})',
+      ),
+    ),
+  ),
+],
+          ],
+        ),
+      ),
+
+      actions: [
+        TextButton(
+          onPressed: isSaving
+              ? null
+              : () => Navigator.of(context).pop(),
+          child: const Text('취소'),
+        ),
+
+        ElevatedButton(
+          onPressed: isSaving ? null : _saveOrder,
+          child: Text(
+            isSaving ? '저장 중...' : '순서 저장',
+          ),
         ),
       ],
     );

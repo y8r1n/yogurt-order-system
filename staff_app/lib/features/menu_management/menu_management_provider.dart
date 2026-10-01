@@ -655,6 +655,37 @@ Future<String> saveOptionGroup({
 }
 
 
+
+Future<void> reorderCategories(
+  List<MenuCategoryItem> categories,
+) async {
+  final supabase = Supabase.instance.client;
+
+  for (int index = 0; index < categories.length; index++) {
+    await supabase
+        .from('menu_categories')
+        .update({
+          'display_order': index,
+        })
+        .eq('id', categories[index].id);
+  }
+
+  await refresh();
+}
+
+Future<void> deleteCategory(String categoryId) async {
+  final supabase = Supabase.instance.client;
+
+  await supabase
+      .from('menu_categories')
+      .update({
+        'is_active': false,
+      })
+      .eq('id', categoryId);
+
+  await refresh();
+}
+
 // =============================================================
 // 옵션 그룹 삭제
 // =============================================================

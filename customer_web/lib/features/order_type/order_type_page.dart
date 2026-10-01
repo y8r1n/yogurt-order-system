@@ -31,17 +31,18 @@ void selectOrderType(OrderType type) {
     selectedType = type;
   });
 
-  debugPrint('선택된 주문 방식: $type');
+  final orderType = type == OrderType.dineIn
+      ? 'dine_in'
+      : 'take_out';
 
-  if (type == OrderType.takeOut) {
-    context.go('/takeout-option');
-  } else {
-    ref
-        .read(orderSessionProvider.notifier)
-        .setDineIn();
+  ref
+      .read(orderSessionProvider.notifier)
+      .selectOrderType(orderType);
 
-    context.go('/menu');
-  }
+  debugPrint('선택된 주문 방식: $orderType');
+
+  context.go('/takeout-option');
+}
 }
 
   @override
@@ -73,7 +74,7 @@ void selectOrderType(OrderType type) {
                       icon: Icons.shopping_bag_outlined,
                       label: '포장해서 가요',
                       isSelected: selectedType == OrderType.takeOut,
-                      onTap: () => selectOrderType(OrderType.takeOut),
+                     onTap: () => selectOrderType(OrderType.takeOut),
                     ),
                   ),
                 ],

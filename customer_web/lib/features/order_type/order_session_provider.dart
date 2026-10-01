@@ -32,13 +32,15 @@ class OrderSessionNotifier extends Notifier<OrderSession> {
     return const OrderSession();
   }
 
-  void setDineIn() {
-    state = const OrderSession(
-      orderType: 'dine_in',
-      icePack: false,
-      spoonCount: 0,
-    );
-  }
+ void setDineIn({
+  required int spoonCount,
+}) {
+  state = OrderSession(
+    orderType: 'dine_in',
+    icePack: false,
+    spoonCount: spoonCount,
+  );
+}
 
   void setTakeOut({
     required bool icePack,
@@ -50,6 +52,15 @@ class OrderSessionNotifier extends Notifier<OrderSession> {
       spoonCount: spoonCount,
     );
   }
+
+
+  void selectOrderType(String orderType) {
+  state = OrderSession(
+    orderType: orderType,
+    icePack: false,
+    spoonCount: 0,
+  );
+}
 
   void clear() {
     state = const OrderSession();

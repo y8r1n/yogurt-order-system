@@ -39,7 +39,7 @@ class OrderService {
         .insert({
           'order_type': orderType,
           'ice_pack': orderType == 'take_out' ? icePack : false,
-          'spoon_count': orderType == 'take_out' ? spoonCount : 0,
+         'spoon_count': spoonCount,
           'subtotal': subtotal,
           'customer_note': customerNote,
         })

@@ -82,6 +82,10 @@ class _TakeoutOptionPageState
 
   @override
   Widget build(BuildContext context) {
+     final session = ref.watch(orderSessionProvider);
+  final isTakeOut = session.orderType == 'take_out';
+
+    
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -100,9 +104,9 @@ class _TakeoutOptionPageState
                   Row(
                     children: [
                       Text(
-                        '포장 옵션 선택',
-                        style: AppTextStyles.titleMedium,
-                      ),
+  isTakeOut ? '포장 옵션 선택' : '숟가락 선택',
+  style: AppTextStyles.titleMedium,
+),
                       const Spacer(),
                       IconButton(
                         onPressed: () => context.go('/order-type'),
